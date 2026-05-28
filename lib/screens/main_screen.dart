@@ -1,0 +1,585 @@
+// ignore_for_file: deprecated_member_use, prefer_null_aware_operators
+
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'banner_editor_screen.dart';
+import 'tasks_screen.dart';
+import 'notes_screen.dart';
+import 'shopping_screen.dart';
+import 'budget_screen.dart';
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  String _bannerTitle = '';
+  String _bannerSubtitle = '';
+  int _bannerTextColor = 0xFFFFFFFF;
+  int _bannerIconColor = 0xFFFFFFFF;
+  int? _bannerTextStrokeColor;
+  double _bannerTitleSize = 18.0;
+  bool _bannerIsBold = true;
+  int _bannerBgColor = 0xFF1565C0;
+  int? _bannerDecorIconCode;
+  String? _bannerImagePath;
+  Alignment _bannerImageAlignment = Alignment.center;
+  double _bannerDimOpacity = 0.35;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBanner();
+  }
+
+  Future<void> _loadBanner() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _bannerTitle = prefs.getString('banner_title') ?? '';
+      _bannerSubtitle = prefs.getString('banner_subtitle') ?? '';
+      _bannerTextColor = prefs.getInt('banner_text_color') ?? 0xFFFFFFFF;
+      _bannerIconColor = prefs.getInt('banner_icon_color') ?? 0xFFFFFFFF;
+      _bannerTextStrokeColor = prefs.getInt('banner_text_stroke');
+      _bannerTitleSize = prefs.getDouble('banner_title_size') ?? 18.0;
+      _bannerIsBold = prefs.getBool('banner_is_bold') ?? true;
+      _bannerBgColor = prefs.getInt('banner_bg_color') ?? 0xFF1565C0;
+      _bannerDecorIconCode = prefs.getInt('banner_decor_icon');
+      _bannerImagePath = prefs.getString('banner_image_path');
+      _bannerImageAlignment = Alignment(
+        prefs.getDouble('banner_align_x') ?? 0.0,
+        prefs.getDouble('banner_align_y') ?? 0.0,
+      );
+      _bannerDimOpacity = prefs.getDouble('banner_dim') ?? 0.35;
+    });
+  }
+
+  Future<void> _saveBanner() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('banner_title', _bannerTitle);
+    await prefs.setString('banner_subtitle', _bannerSubtitle);
+    await prefs.setInt('banner_text_color', _bannerTextColor);
+    await prefs.setInt('banner_icon_color', _bannerIconColor);
+    if (_bannerTextStrokeColor != null) {
+      await prefs.setInt('banner_text_stroke', _bannerTextStrokeColor!);
+    } else {
+      await prefs.remove('banner_text_stroke');
+    }
+    await prefs.setDouble('banner_title_size', _bannerTitleSize);
+    await prefs.setBool('banner_is_bold', _bannerIsBold);
+    await prefs.setInt('banner_bg_color', _bannerBgColor);
+    if (_bannerDecorIconCode != null) {
+      await prefs.setInt('banner_decor_icon', _bannerDecorIconCode!);
+    } else {
+      await prefs.remove('banner_decor_icon');
+    }
+    if (_bannerImagePath != null) {
+      await prefs.setString('banner_image_path', _bannerImagePath!);
+    } else {
+      await prefs.remove('banner_image_path');
+    }
+    await prefs.setDouble('banner_align_x', _bannerImageAlignment.x);
+    await prefs.setDouble('banner_align_y', _bannerImageAlignment.y);
+    await prefs.setDouble('banner_dim', _bannerDimOpacity);
+  }
+
+  Future<void> _openBannerEditor() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BannerEditorScreen(
+          initialTitle: _bannerTitle,
+          initialSubtitle: _bannerSubtitle,
+          initialTextColor: _bannerTextColor,
+          initialIconColor: _bannerIconColor,
+          initialTextStrokeColor: _bannerTextStrokeColor,
+          initialTitleSize: _bannerTitleSize,
+          initialIsBold: _bannerIsBold,
+          initialBgColor: _bannerBgColor,
+          initialDecorIconCode: _bannerDecorIconCode,
+          initialImagePath: _bannerImagePath,
+          initialImageAlignX: _bannerImageAlignment.x,
+          initialImageAlignY: _bannerImageAlignment.y,
+          initialImageDim: _bannerDimOpacity,
+        ),
+      ),
+    );
+    if (result == null) return;
+    setState(() {
+      _bannerTitle = result['title'] as String;
+      _bannerSubtitle = result['subtitle'] as String;
+      _bannerTextColor = result['textColor'] as int;
+      _bannerIconColor = result['iconColor'] as int;
+      _bannerTextStrokeColor = result['textStrokeColor'] as int?;
+      _bannerTitleSize = result['titleSize'] as double;
+      _bannerIsBold = result['isBold'] as bool;
+      _bannerBgColor = result['bgColor'] as int;
+      _bannerDecorIconCode = result['decorIconCode'] as int?;
+      _bannerImagePath = result['imagePath'] as String?;
+      _bannerImageAlignment = Alignment(
+        result['imageAlignX'] as double,
+        result['imageAlignY'] as double,
+      );
+      _bannerDimOpacity = result['imageDim'] as double;
+    });
+    await _saveBanner();
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'อรุณสวัสดิ์';
+    if (hour < 17) return 'สวัสดีตอนบ่าย';
+    if (hour < 20) return 'สวัสดีตอนเย็น';
+    return 'สวัสดีตอนค่ำ';
+  }
+
+  String _shortDate() {
+    final now = DateTime.now();
+    const thDays = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
+    const thMonths = [
+      'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+      'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+    ];
+    final day = thDays[now.weekday - 1];
+    final month = thMonths[now.month - 1];
+    return '$day ${now.day} $month';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = Color(_bannerTextColor);
+    final iconColor = Color(_bannerIconColor);
+    final strokeColor =
+        _bannerTextStrokeColor != null ? Color(_bannerTextStrokeColor!) : null;
+    final bgColor = Color(_bannerBgColor);
+    final decorIcon = _bannerDecorIconCode != null
+        ? kDecorIcons
+            .whereType<IconData>()
+            .firstWhere((i) => i.codePoint == _bannerDecorIconCode,
+                orElse: () => Icons.auto_awesome)
+        : null;
+    final hasContent = _bannerTitle.isNotEmpty ||
+        _bannerSubtitle.isNotEmpty ||
+        _bannerImagePath != null ||
+        decorIcon != null;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 2,
+        shadowColor: const Color(0xFF0D47A1).withOpacity(0.25),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0D47A1), Color(0xFF1976D2)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
+        titleSpacing: 20,
+        centerTitle: false,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'DailyTask',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.3,
+              ),
+            ),
+            Text(
+              _greeting(),
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.white70,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _shortDate(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Banner ──────────────────────────────────────────────
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: _openBannerEditor,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: 172,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(20),
+                  image: _bannerImagePath != null
+                      ? DecorationImage(
+                          image: FileImage(File(_bannerImagePath!)),
+                          fit: BoxFit.cover,
+                          alignment: _bannerImageAlignment,
+                          colorFilter: ColorFilter.mode(
+                            Colors.black.withOpacity(_bannerDimOpacity),
+                            BlendMode.darken,
+                          ),
+                        )
+                      : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: bgColor.withOpacity(0.45),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(fit: StackFit.expand, children: [
+                    if (decorIcon != null)
+                      Positioned(
+                        right: -8,
+                        bottom: -8,
+                        child: Icon(decorIcon,
+                            size: 100, color: iconColor.withOpacity(0.08)),
+                      ),
+                    // Edit chip overlay
+                    Positioned(
+                      top: 10,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                        ),
+                      ),
+                    ),
+                    if (hasContent)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (decorIcon != null) ...[
+                              Icon(decorIcon,
+                                  size: 26,
+                                  color: iconColor.withOpacity(0.9)),
+                              const SizedBox(height: 6),
+                            ],
+                            if (_bannerTitle.isNotEmpty)
+                              _bannerStyledText(
+                                _bannerTitle,
+                                _bannerTitleSize,
+                                _bannerIsBold
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                textColor,
+                                strokeColor,
+                              ),
+                            if (_bannerSubtitle.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              _bannerStyledText(
+                                _bannerSubtitle,
+                                _bannerTitleSize * 0.68,
+                                FontWeight.normal,
+                                textColor.withOpacity(0.8),
+                                strokeColor != null
+                                    ? strokeColor.withOpacity(0.6)
+                                    : null,
+                              ),
+                            ],
+                          ],
+                        ),
+                      )
+                    else
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                                Icons.add_photo_alternate_outlined,
+                                size: 26,
+                                color: Colors.white60),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'แตะเพื่อตกแต่งแบนเนอร์',
+                            style: TextStyle(
+                                color: Colors.white70, fontSize: 13),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'เพิ่มข้อความ · สี · ไอคอน · รูปภาพ',
+                            style: TextStyle(
+                                color: Colors.white38, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                  ]),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // ── Section header ───────────────────────────────────────
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'เมนูหลัก',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // ── 4 nav cards ─────────────────────────────────────────
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _NavCard(
+                    label: 'จดบันทึกงาน',
+                    subtitle: 'จัดการงานประจำวัน',
+                    icon: Icons.check_circle_rounded,
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFE3F2FD),
+                        theme.colorScheme.primaryContainer,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    iconColor: theme.colorScheme.primary,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TasksScreen()),
+                    ),
+                  ),
+                  _NavCard(
+                    label: 'โน็ต / บันทึก',
+                    subtitle: 'บันทึกความคิดไว้ที่นี่',
+                    icon: Icons.sticky_note_2_rounded,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    iconColor: const Color(0xFFFF8F00),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NotesScreen()),
+                    ),
+                  ),
+                  _NavCard(
+                    label: 'รายการช้อปปิ้ง',
+                    subtitle: 'ของที่ต้องซื้อวันนี้',
+                    icon: Icons.shopping_cart_rounded,
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFE8F5E9),
+                        Colors.green.shade100,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    iconColor: Colors.green.shade700,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ShoppingScreen()),
+                    ),
+                  ),
+                  _NavCard(
+                    label: 'บันทึกการเงิน',
+                    subtitle: 'รายรับ-รายจ่ายของคุณ',
+                    icon: Icons.account_balance_wallet_rounded,
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFF3E5F5),
+                        Colors.purple.shade100,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    iconColor: Colors.purple.shade700,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const BudgetScreen()),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Styled text with optional stroke ─────────────────────────────────────────
+
+Widget _bannerStyledText(String text, double fontSize, FontWeight weight,
+    Color fillColor, Color? strokeColor) {
+  final ts = TextStyle(fontSize: fontSize, fontWeight: weight, height: 1.25);
+  if (strokeColor == null) {
+    return Text(text,
+        textAlign: TextAlign.center, style: ts.copyWith(color: fillColor));
+  }
+  return Stack(
+    children: [
+      Text(text,
+          textAlign: TextAlign.center,
+          style: ts.copyWith(
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2.5
+              ..strokeJoin = StrokeJoin.round
+              ..color = strokeColor,
+          )),
+      Text(text,
+          textAlign: TextAlign.center, style: ts.copyWith(color: fillColor)),
+    ],
+  );
+}
+
+// ── Navigation card widget ────────────────────────────────────────────────────
+
+class _NavCard extends StatelessWidget {
+  const _NavCard({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.gradient,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final Gradient gradient;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: iconColor.withOpacity(0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 28, color: iconColor),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: iconColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 3),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: iconColor.withOpacity(0.6),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
