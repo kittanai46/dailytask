@@ -207,6 +207,7 @@ class _TasksScreenState extends State<TasksScreen>
 
   void _showTaskDetail(Task task) {
     final iconColor = Color(task.iconColor);
+    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -223,9 +224,9 @@ class _TasksScreenState extends State<TasksScreen>
             maxChildSize: 0.90,
             expand: false,
             builder: (ctx2, scrollCtrl) => Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 children: [
@@ -285,7 +286,7 @@ class _TasksScreenState extends State<TasksScreen>
                                       fontWeight: FontWeight.bold,
                                       color: isDone
                                           ? Colors.grey.shade400
-                                          : const Color(0xFF1A1D2E),
+                                          : cs.onSurface,
                                       decoration: isDone
                                           ? TextDecoration.lineThrough
                                           : null,
@@ -345,7 +346,7 @@ class _TasksScreenState extends State<TasksScreen>
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF7F8FA),
+                              color: cs.surfaceContainerLow,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(
@@ -364,9 +365,9 @@ class _TasksScreenState extends State<TasksScreen>
                                 const SizedBox(height: 8),
                                 Text(
                                   task.description,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 14,
-                                      color: Color(0xFF374151),
+                                      color: cs.onSurface,
                                       height: 1.5),
                                 ),
                               ],
@@ -443,7 +444,7 @@ class _TasksScreenState extends State<TasksScreen>
                                           fontSize: 14,
                                           color: sub.isCompleted
                                               ? Colors.grey.shade400
-                                              : const Color(0xFF374151),
+                                              : cs.onSurface,
                                           decoration: sub.isCompleted
                                               ? TextDecoration.lineThrough
                                               : null,
@@ -554,7 +555,7 @@ class _TasksScreenState extends State<TasksScreen>
                   decoration: BoxDecoration(
                     color: isToday
                         ? const Color(0xFF1565C0)
-                        : const Color(0xFFEEF2FF),
+                        : Theme.of(ctx).colorScheme.primaryContainer.withOpacity(0.4),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -563,7 +564,7 @@ class _TasksScreenState extends State<TasksScreen>
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color:
-                          isToday ? Colors.white : const Color(0xFF3730A3),
+                          isToday ? Colors.white : Theme.of(ctx).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -618,6 +619,7 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   Widget _buildEmptyState() {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -625,8 +627,8 @@ class _TasksScreenState extends State<TasksScreen>
           Container(
             width: 80,
             height: 80,
-            decoration: const BoxDecoration(
-              color: Color(0xFFEEF2FF),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer.withOpacity(0.5),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.task_alt,
@@ -658,7 +660,6 @@ class _TasksScreenState extends State<TasksScreen>
     final allDone = _tasks.where((t) => t.isCompleted).length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -824,7 +825,7 @@ class _TaskCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -845,10 +846,10 @@ class _TaskCard extends StatelessWidget {
                   context: context,
                   backgroundColor: Colors.transparent,
                   builder: (ctx) => Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(20)),
+                          const BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
                     child: Column(
@@ -865,10 +866,10 @@ class _TaskCard extends StatelessWidget {
                         const SizedBox(height: 16),
                         Text(
                           task.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A1D2E)),
+                              color: Theme.of(context).colorScheme.onSurface),
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -877,7 +878,7 @@ class _TaskCard extends StatelessWidget {
                         ListTile(
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
-                          tileColor: const Color(0xFFF0F4FF),
+                          tileColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
                           leading: const Icon(Icons.edit_rounded,
                               color: Color(0xFF1565C0)),
                           title: const Text('แก้ไขงาน',
@@ -978,7 +979,7 @@ class _TaskCard extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                   color: isDone
                                       ? Colors.grey.shade400
-                                      : const Color(0xFF1A1D2E),
+                                      : Theme.of(context).colorScheme.onSurface,
                                   decoration: isDone
                                       ? TextDecoration.lineThrough
                                       : null,
@@ -1251,9 +1252,9 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: EdgeInsets.only(
           left: 20,
@@ -1276,9 +1277,9 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'เลือกไอคอน',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1D2E)),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 16),
             StatefulBuilder(
@@ -1300,7 +1301,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                       width: 54,
                       height: 54,
                       decoration: BoxDecoration(
-                        color: isSelected ? color.withOpacity(0.12) : const Color(0xFFF7F8FA),
+                        color: isSelected ? color.withOpacity(0.12) : Theme.of(context).colorScheme.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: isSelected ? color : const Color(0xFFEEF0F4),
@@ -1381,7 +1382,6 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
     final isCustomSelected = !isTodaySelected && !isTomorrowSelected;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F7),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -1435,8 +1435,8 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
               child: TextField(
               controller: _titleCtrl,
               autofocus: true,
-              style: const TextStyle(
-                  fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF1A1D2E)),
+              style: TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'ระบุชื่องาน...',
                 hintStyle: const TextStyle(
@@ -1444,7 +1444,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                     fontSize: 17,
                     fontWeight: FontWeight.w400),
                 filled: true,
-                fillColor: const Color(0xFFF7F8FA),
+                fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
                 contentPadding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1467,12 +1467,12 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
               child: TextField(
               controller: _descCtrl,
               maxLines: 4,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF1A1D2E), height: 1.5),
+              style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface, height: 1.5),
               decoration: InputDecoration(
                 hintText: 'เพิ่มรายละเอียด หรือ หมายเหตุ...',
                 hintStyle: const TextStyle(color: Color(0xFFCBCFDA), fontSize: 14),
                 filled: true,
-                fillColor: const Color(0xFFF7F8FA),
+                fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
                 contentPadding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1509,7 +1509,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                           decoration: BoxDecoration(
                             color: isCustomSelected
                                 ? const Color(0xFF1565C0)
-                                : const Color(0xFFF0F2F7),
+                                : Theme.of(context).colorScheme.surfaceContainerLow,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -1667,13 +1667,13 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2FF),
+                        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
                         borderRadius: BorderRadius.circular(10)),
                     child: Text(
                       '${_subtasks.length}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF3730A3),
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -1711,7 +1711,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
                     Expanded(
                       child: TextField(
                         controller: _subCtrls[i],
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF1A1D2E)),
+                        style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           hintText: 'งานย่อยที่ ${i + 1}',
                           hintStyle: const TextStyle(color: Color(0xFFBEC3CF), fontSize: 14),
@@ -1757,7 +1757,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
 
   Widget _buildCard(List<Widget> children) => Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -1775,14 +1775,14 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
   Widget _cardLabel(IconData icon, String text) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: const Color.fromARGB(255, 0, 0, 0)),
+          Icon(icon, size: 15, color: Theme.of(context).colorScheme.onSurface),
           const SizedBox(width: 6),
           Text(
             text,
             style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: const Color.fromARGB(255, 0, 0, 0)),
+                color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       );
@@ -1794,7 +1794,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1565C0) : const Color(0xFFF0F2F7),
+            color: selected ? const Color(0xFF1565C0) : Theme.of(context).colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
@@ -1802,7 +1802,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
             style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: selected ? Colors.white : const Color.fromARGB(255, 0, 0, 0)),
+                color: selected ? Colors.white : Theme.of(context).colorScheme.onSurface),
           ),
         ),
       );
@@ -1816,7 +1816,7 @@ class _TaskEditorSheetState extends State<_TaskEditorSheet> {
           decoration: BoxDecoration(
             color: selected
                 ? const Color(0xFF1565C0).withOpacity(0.1)
-                : const Color(0xFFF0F2F7),
+                : Theme.of(context).colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: selected ? const Color(0xFF1565C0) : Colors.transparent,

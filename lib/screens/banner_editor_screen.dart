@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -121,6 +122,7 @@ class _BannerEditorNotifier extends ChangeNotifier {
   int bgColor;
   int? decorIconCode;
   String? imagePath;
+  Uint8List? imageBytes;
   double imageAlignX;
   double imageAlignY;
   double imageDim;
@@ -134,8 +136,9 @@ class _BannerEditorNotifier extends ChangeNotifier {
   void toggleBold() { isBold = !isBold; notifyListeners(); }
   void setBgColor(int v) { bgColor = v; notifyListeners(); }
   void setDecorIconCode(int? v) { decorIconCode = v; notifyListeners(); }
-  void setImage(String path, Alignment align, double dim) {
+  void setImage(String path, Alignment align, double dim, {Uint8List? bytes}) {
     imagePath = path;
+    imageBytes = bytes;
     imageAlignX = align.x;
     imageAlignY = align.y;
     imageDim = dim;
@@ -147,7 +150,7 @@ class _BannerEditorNotifier extends ChangeNotifier {
     imageDim = dim;
     notifyListeners();
   }
-  void removeImage() { imagePath = null; notifyListeners(); }
+  void removeImage() { imagePath = null; imageBytes = null; notifyListeners(); }
 
   Map<String, dynamic> get result => {
     'title': titleCtrl.text.trim(),
@@ -193,11 +196,13 @@ class _BannerEditorState extends State<BannerEditorScreen> {
   Future<void> _pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null || !mounted) return;
+    final bytes = await picked.readAsBytes();
     final pos = await Navigator.push<(Alignment, double)>(
       context,
       MaterialPageRoute(
         builder: (_) => _ImagePositionPicker(
           imagePath: picked.path,
+          imageBytes: bytes,
           initialAlignment: _n.imageAlignment,
           initialDim: _n.imageDim,
           bannerTitle: _n.titleCtrl.text,
@@ -206,7 +211,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
       ),
     );
     if (pos == null) return;
-    _n.setImage(picked.path, pos.$1, pos.$2);
+    _n.setImage(picked.path, pos.$1, pos.$2, bytes: bytes);
   }
 
   Future<void> _adjustPosition() async {
@@ -216,6 +221,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
       MaterialPageRoute(
         builder: (_) => _ImagePositionPicker(
           imagePath: _n.imagePath!,
+          imageBytes: _n.imageBytes,
           initialAlignment: _n.imageAlignment,
           initialDim: _n.imageDim,
           bannerTitle: _n.titleCtrl.text,
@@ -247,12 +253,10 @@ class _BannerEditorState extends State<BannerEditorScreen> {
             : null;
 
         return Scaffold(
-      backgroundColor: const Color(0xFFF1F3F8),
       body: CustomScrollView(
         slivers: [
           // ── App bar ───────────────────────────────────────────────
           SliverAppBar(
-            backgroundColor: const Color(0xFFF1F3F8),
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             pinned: true,
@@ -265,7 +269,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -274,16 +278,16 @@ class _BannerEditorState extends State<BannerEditorScreen> {
                           offset: const Offset(0, 2)),
                     ],
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new_rounded,
-                      size: 15, color: Colors.black87),
+                  child: Icon(Icons.arrow_back_ios_new_rounded,
+                      size: 15, color: Theme.of(context).colorScheme.onSurface),
                 ),
               ),
             ),
-            title: const Text('ออกแบบแบนเนอร์',
+            title: Text('ออกแบบแบนเนอร์',
                 style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.3)),
             actions: [
               Padding(
@@ -493,7 +497,9 @@ class _BannerEditorState extends State<BannerEditorScreen> {
               color: bgColor,
               image: _n.imagePath != null
                   ? DecorationImage(
-                      image: FileImage(File(_n.imagePath!)),
+                      image: _n.imageBytes != null
+                          ? MemoryImage(_n.imageBytes!)
+                          : FileImage(File(_n.imagePath!)),
                       fit: BoxFit.cover,
                       alignment: _n.imageAlignment,
                       colorFilter: ColorFilter.mode(
@@ -653,7 +659,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F8FA),
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               shape: BoxShape.circle,
               border: Border.all(
                 color: _n.textStrokeColor == null
@@ -735,7 +741,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -759,10 +765,10 @@ class _BannerEditorState extends State<BannerEditorScreen> {
             ),
             const SizedBox(width: 10),
             Text(title,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1D2E),
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.1)),
           ]),
           const SizedBox(height: 16),
@@ -773,10 +779,10 @@ class _BannerEditorState extends State<BannerEditorScreen> {
   }
 
   Widget _subLabel(String text) => Text(text,
-      style: const TextStyle(
+      style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: Color.fromARGB(255, 0, 0, 0)));
+          color: Theme.of(context).colorScheme.onSurface));
 
   // ─── Font size selector ────────────────────────────────────────────────────
 
@@ -784,7 +790,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -798,7 +804,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
                 curve: Curves.easeInOut,
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white : Colors.transparent,
+                  color: selected ? Theme.of(context).colorScheme.surface : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: selected
                       ? [
@@ -817,7 +823,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
                             ? FontWeight.w700
                             : FontWeight.w400,
                         color: selected
-                            ? const Color(0xFF1A1D2E)
+                            ? Theme.of(context).colorScheme.onSurface
                             : const Color(0xFF9CA3AF))),
               ),
             ),
@@ -838,7 +844,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
         decoration: BoxDecoration(
           color: _n.isBold
               ? const Color(0xFF5B6AF6).withOpacity(0.08)
-              : const Color(0xFFF3F4F6),
+              : Theme.of(context).colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _n.isBold
@@ -861,7 +867,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
                       _n.isBold ? FontWeight.w700 : FontWeight.w400,
                   color: _n.isBold
                       ? const Color(0xFF5B6AF6)
-                      : const Color(0xFF6B7280))),
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
           const Spacer(),
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -871,7 +877,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
             decoration: BoxDecoration(
               color: _n.isBold
                   ? const Color(0xFF5B6AF6)
-                  : const Color(0xFFD1D5DB),
+                  : Theme.of(context).colorScheme.outline,
               borderRadius: BorderRadius.circular(12),
             ),
             child: AnimatedAlign(
@@ -898,14 +904,14 @@ class _BannerEditorState extends State<BannerEditorScreen> {
       TextEditingController ctrl, String label, IconData prefixIcon) {
     return TextField(
       controller: ctrl,
-      style: const TextStyle(fontSize: 14, color: Color(0xFF1A1D2E)),
+      style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
       decoration: InputDecoration(
         hintText: label,
         hintStyle: const TextStyle(color: Color(0xFFBEC3CF), fontSize: 14),
         prefixIcon:
             Icon(prefixIcon, size: 18, color: const Color(0xFFBEC3CF)),
         filled: true,
-        fillColor: const Color(0xFFF7F8FA),
+        fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         border: OutlineInputBorder(
@@ -1043,8 +1049,11 @@ class _BannerEditorState extends State<BannerEditorScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
-            child: Stack(children: [
-              Image.file(File(_n.imagePath!),
+              child: Stack(children: [
+              _n.imageBytes != null
+                ? Image.memory(_n.imageBytes!,
+                  height: 100, width: double.infinity, fit: BoxFit.cover)
+                : Image.file(File(_n.imagePath!),
                   height: 100, width: double.infinity, fit: BoxFit.cover),
               Positioned(
                 top: 8,
@@ -1132,6 +1141,7 @@ class _BannerEditorState extends State<BannerEditorScreen> {
 class _ImagePositionPicker extends StatefulWidget {
   const _ImagePositionPicker({
     required this.imagePath,
+    this.imageBytes,
     required this.initialAlignment,
     required this.initialDim,
     required this.bannerTitle,
@@ -1139,6 +1149,7 @@ class _ImagePositionPicker extends StatefulWidget {
   });
 
   final String imagePath;
+  final Uint8List? imageBytes;
   final Alignment initialAlignment;
   final double initialDim;
   final String bannerTitle;
@@ -1166,16 +1177,19 @@ class _ImagePositionPickerState extends State<_ImagePositionPicker> {
   }
 
   void _resolveImageSize() {
-    FileImage(File(widget.imagePath))
-        .resolve(const ImageConfiguration())
-        .addListener(ImageStreamListener((info, _) {
-      if (mounted) {
-        setState(() => _imageSize = Size(
-              info.image.width.toDouble(),
-              info.image.height.toDouble(),
-            ));
-      }
-    }));
+    final ImageProvider provider = widget.imageBytes != null
+      ? MemoryImage(widget.imageBytes!)
+      : FileImage(File(widget.imagePath));
+    provider.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener((info, _) {
+        if (mounted) {
+          setState(() => _imageSize = Size(
+                info.image.width.toDouble(),
+                info.image.height.toDouble(),
+              ));
+        }
+      }),
+    );
   }
 
   @override
@@ -1282,8 +1296,9 @@ class _ImagePositionPickerState extends State<_ImagePositionPicker> {
                           top: offY,
                           width: rW,
                           height: rH,
-                          child: Image.file(File(widget.imagePath),
-                              fit: BoxFit.fill),
+                          child: widget.imageBytes != null
+                              ? Image.memory(widget.imageBytes!, fit: BoxFit.fill)
+                              : Image.file(File(widget.imagePath), fit: BoxFit.fill),
                         ),
                         if (cY > offY)
                           Positioned(
@@ -1383,11 +1398,13 @@ class _ImagePositionPickerState extends State<_ImagePositionPicker> {
                   child: SizedBox(
                     height: bannerH,
                     child: Stack(fit: StackFit.expand, children: [
-                      Image.file(
-                        File(widget.imagePath),
-                        fit: BoxFit.cover,
-                        alignment: _alignment,
-                      ),
+                      widget.imageBytes != null
+                          ? Image.memory(widget.imageBytes!, fit: BoxFit.cover, alignment: _alignment)
+                          : Image.file(
+                              File(widget.imagePath),
+                              fit: BoxFit.cover,
+                              alignment: _alignment,
+                            ),
                       ColoredBox(color: Colors.black.withOpacity(_dim)),
                       Padding(
                         padding: const EdgeInsets.symmetric(

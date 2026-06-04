@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/shopping_item.dart';
+import '../models/shopping_bill.dart';
 import '../services/storage_service.dart';
+import 'shopping_bill_detail_screen.dart';
 
 class ShoppingScreen extends StatefulWidget {
   const ShoppingScreen({super.key});
@@ -10,326 +11,449 @@ class ShoppingScreen extends StatefulWidget {
 }
 
 class _ShoppingScreenState extends State<ShoppingScreen> {
-  List<ShoppingItem> _items = [];
+  List<ShoppingBill> _bills = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadItems();
+    _loadBills();
   }
 
-  Future<void> _loadItems() async {
-    final items = await StorageService.getShoppingItems();
+  Future<void> _loadBills() async {
+    final bills = await StorageService.getShoppingBills();
     setState(() {
-      _items = items;
+      _bills = bills;
       _isLoading = false;
     });
   }
 
-  Future<void> _saveItems() async {
-    await StorageService.saveShoppingItems(_items);
+  Future<void> _saveBills() async {
+    await StorageService.saveShoppingBills(_bills);
   }
 
-  void _toggleItem(ShoppingItem item) {
-    setState(() => item.isChecked = !item.isChecked);
-    _saveItems();
-  }
-
-  void _deleteItem(ShoppingItem item) {
-    setState(() => _items.removeWhere((i) => i.id == item.id));
-    _saveItems();
-  }
-
-  void _clearChecked() {
-    setState(() => _items.removeWhere((i) => i.isChecked));
-    _saveItems();
-  }
-
-  void _showAddItemDialog({ShoppingItem? editItem}) {
-    final nameController =
-        TextEditingController(text: editItem?.name ?? '');
-    final qtyController =
-        TextEditingController(text: editItem?.quantity.toString() ?? '1');
-    final priceController =
-        TextEditingController(text: editItem?.price?.toStringAsFixed(2) ?? '');
-
+  void _showAddBillDialog() {
+    final nameController = TextEditingController();
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(editItem == null ? 'เพิ่มสินค้า' : 'แก้ไขสินค้า'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
           children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'ชื่อสินค้า',
-                border: OutlineInputBorder(),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
               ),
-              autofocus: true,
+              child: const Icon(Icons.receipt_long, color: Colors.green, size: 22),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: qtyController,
-                    decoration: const InputDecoration(
-                      labelText: 'จำนวน',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: priceController,
-                    decoration: const InputDecoration(
-                      labelText: 'ราคา/ชิ้น',
-                      border: OutlineInputBorder(),
-                      prefixText: '฿',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
-                  ),
-                ),
-              ],
-            ),
+            const SizedBox(width: 12),
+            const Text('สร้างบิลใหม่'),
           ],
+        ),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            labelText: 'ชื่อบิล (เช่น Makro, Lotus)',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            prefixIcon: const Icon(Icons.shopping_bag_outlined),
+          ),
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          onSubmitted: (_) => _submitBill(nameController),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('ยกเลิก'),
           ),
-          FilledButton(
-            onPressed: () {
-              if (nameController.text.trim().isEmpty) return;
-              final qty = int.tryParse(qtyController.text) ?? 1;
-              final price = double.tryParse(priceController.text);
-              if (editItem != null) {
-                setState(() {
-                  editItem.name = nameController.text.trim();
-                  editItem.quantity = qty < 1 ? 1 : qty;
-                  editItem.price = price;
-                });
-              } else {
-                setState(() {
-                  _items.add(ShoppingItem(
-                    name: nameController.text.trim(),
-                    quantity: qty < 1 ? 1 : qty,
-                    price: price,
-                  ));
-                });
-              }
-              _saveItems();
-              Navigator.pop(context);
-            },
-            child: const Text('บันทึก'),
+          FilledButton.icon(
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('สร้าง'),
+            onPressed: () => _submitBill(nameController),
           ),
         ],
       ),
     );
   }
 
-  double get _totalPrice {
-    return _items
-        .where((i) => i.price != null)
-        .fold(0, (sum, i) => sum + (i.price! * i.quantity));
+  void _submitBill(TextEditingController controller) {
+    final name = controller.text.trim();
+    if (name.isEmpty) return;
+    final bill = ShoppingBill(name: name);
+    setState(() => _bills.insert(0, bill));
+    _saveBills();
+    Navigator.pop(context);
+    _openBill(bill);
   }
 
-  Widget _buildShoppingTile(ShoppingItem item) {
+  void _openBill(ShoppingBill bill) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ShoppingBillDetailScreen(bill: bill),
+      ),
+    ).then((_) => _loadBills());
+  }
+
+  Color _statusColor(ShoppingBill bill) {
+    if (bill.totalCount == 0) return Colors.blueGrey;
+    if (bill.isCompleted) return Colors.green;
+    return Colors.orange;
+  }
+
+  IconData _statusIcon(ShoppingBill bill) {
+    if (bill.totalCount == 0) return Icons.shopping_cart_outlined;
+    if (bill.isCompleted) return Icons.check_circle_outline;
+    return Icons.shopping_cart;
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      '', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+      'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+    ];
+    return '${date.day} ${months[date.month]} ${date.year + 543}';
+  }
+
+  Widget _buildBillCard(ShoppingBill bill) {
+    final color = _statusColor(bill);
+    final icon = _statusIcon(bill);
+    final progress =
+        bill.totalCount > 0 ? bill.checkedCount / bill.totalCount : 0.0;
+
     return Dismissible(
-      key: Key(item.id),
+      key: Key(bill.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(right: 24),
+        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: Colors.red,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.delete_outline, color: Colors.white, size: 28),
+            SizedBox(height: 4),
+            Text('ลบ', style: TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        ),
       ),
-      onDismissed: (_) => _deleteItem(item),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        child: ListTile(
-          leading: Checkbox(
-            value: item.isChecked,
-            onChanged: (_) => _toggleItem(item),
-            activeColor: Colors.green,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4)),
-          ),
-          title: Text(
-            item.name,
-            style: TextStyle(
-              decoration:
-                  item.isChecked ? TextDecoration.lineThrough : null,
-              color: item.isChecked ? Colors.grey : null,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          subtitle: Row(
-            children: [
-              Text(
-                'จำนวน: ${item.quantity}',
-                style: const TextStyle(fontSize: 12),
+      confirmDismiss: (_) async {
+        bool confirmed = false;
+        await showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('ลบบิล?'),
+            content: Text(
+                'ลบบิล "${bill.name}" และรายการทั้งหมด ${bill.totalCount} รายการ'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('ยกเลิก'),
               ),
-              if (item.price != null) ...[
-                const SizedBox(width: 8),
-                Text(
-                  '฿${(item.price! * item.quantity).toStringAsFixed(2)}',
-                  style: const TextStyle(
-                      fontSize: 12, color: Colors.green),
-                ),
-              ],
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () {
+                  confirmed = true;
+                  Navigator.pop(context);
+                },
+                child: const Text('ลบ'),
+              ),
             ],
           ),
-          trailing: IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            onPressed: () => _showAddItemDialog(editItem: item),
+        );
+        return confirmed;
+      },
+      onDismissed: (_) {
+        setState(() => _bills.removeWhere((b) => b.id == bill.id));
+        _saveBills();
+      },
+      child: Card(
+        elevation: 2,
+        shadowColor: color.withOpacity(0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.only(bottom: 12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openBill(bill),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: color, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            bill.name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _formatDate(bill.createdAt),
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[500]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (bill.isCompleted)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'ครบแล้ว',
+                          style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      )
+                    else
+                      Icon(Icons.chevron_right, color: Colors.grey[400]),
+                  ],
+                ),
+                if (bill.totalCount > 0) ...[
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation(color),
+                      minHeight: 6,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(Icons.checklist_rounded,
+                          size: 14, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${bill.checkedCount}/${bill.totalCount} รายการ',
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                      const Spacer(),
+                      if (bill.totalPrice > 0) ...[
+                        Icon(Icons.payments_outlined,
+                            size: 14, color: Colors.green[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          '฿${bill.totalPrice.toStringAsFixed(2)}',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.green[700]),
+                        ),
+                      ],
+                    ],
+                  ),
+                ] else ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'ยังไม่มีรายการ — แตะเพื่อเพิ่ม',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                  ),
+                ],
+              ],
+            ),
           ),
-          onTap: () => _toggleItem(item),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryHeader() {
+    final totalBills = _bills.length;
+    final completedBills = _bills.where((b) => b.isCompleted).length;
+    final totalItems = _bills.fold(0, (sum, b) => sum + b.totalCount);
+    final checkedItems = _bills.fold(0, (sum, b) => sum + b.checkedCount);
+    final grandTotal =
+        _bills.fold(0.0, (s, b) => s + b.totalPrice);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2E7D32), Color(0xFF43A047)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _summaryTile(
+            icon: Icons.receipt_long,
+            value: '$completedBills/$totalBills',
+            label: 'บิล',
+          ),
+          Container(width: 1, height: 40, color: Colors.white24),
+          _summaryTile(
+            icon: Icons.checklist_rounded,
+            value: '$checkedItems/$totalItems',
+            label: 'รายการ',
+          ),
+          Container(width: 1, height: 40, color: Colors.white24),
+          _summaryTile(
+            icon: Icons.payments_outlined,
+            value: totalItems > 0
+                ? '฿${grandTotal.toStringAsFixed(0)}'
+                : '—',
+            label: 'ยอดรวม',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryTile(
+      {required IconData icon,
+      required String value,
+      required String label}) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white70, size: 18),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final unchecked = _items.where((i) => !i.isChecked).toList();
-    final checked = _items.where((i) => i.isChecked).toList();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('รายการช้อปปิ้ง'),
-        backgroundColor: const Color(0xFFE8F5E9),
         actions: [
-          if (checked.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_sweep),
-              tooltip: 'ลบที่ซื้อแล้ว',
-              onPressed: () => showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: const Text('ลบรายการที่ซื้อแล้ว?'),
-                  content: Text(
-                      'จะลบ ${checked.length} รายการที่เช็คแล้ว'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('ยกเลิก'),
-                    ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                          backgroundColor: Colors.red),
-                      onPressed: () {
-                        _clearChecked();
-                        Navigator.pop(context);
-                      },
-                      child: const Text('ลบ'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'สร้างบิลใหม่',
+            onPressed: _showAddBillDialog,
+          ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                if (_items.isNotEmpty && _totalPrice > 0)
-                  Container(
-                    color: const Color(0xFFE8F5E9),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.receipt_long,
-                            size: 18, color: Colors.green),
-                        const SizedBox(width: 8),
-                        Text(
-                          'ราคารวม: ฿${_totalPrice.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600),
+          : _bills.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(28),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.08),
+                          shape: BoxShape.circle,
                         ),
-                        const Spacer(),
-                        Text(
-                          '${checked.length}/${_items.length} รายการ',
-                          style: TextStyle(
-                              color: Colors.grey[600], fontSize: 13),
+                        child: Icon(
+                          Icons.receipt_long_outlined,
+                          size: 72,
+                          color: Colors.green.withOpacity(0.4),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'ยังไม่มีบิล',
+                        style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'กด + เพื่อสร้างบิลช้อปปิ้งใหม่',
+                        style:
+                            TextStyle(color: Colors.grey[400], fontSize: 14),
+                      ),
+                      const SizedBox(height: 28),
+                      FilledButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: const Text('สร้างบิลใหม่'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _showAddBillDialog,
+                      ),
+                    ],
                   ),
-                Expanded(
-                  child: _items.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.shopping_cart_outlined,
-                                  size: 72, color: Colors.grey[300]),
-                              const SizedBox(height: 16),
-                              Text(
-                                'รายการว่าง',
-                                style: TextStyle(
-                                    color: Colors.grey[500],
-                                    fontSize: 16),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'กด + เพื่อเพิ่มสินค้า',
-                                style: TextStyle(
-                                    color: Colors.grey[400],
-                                    fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView(
-                          padding: const EdgeInsets.all(16),
-                          children: [
-                            ...unchecked.map(_buildShoppingTile),
-                            if (checked.isNotEmpty) ...[
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      'ซื้อแล้ว (${checked.length})',
-                                      style: TextStyle(
-                                          color: Colors.grey[500],
-                                          fontSize: 13),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                        child:
-                                            Divider(color: Colors.grey[300])),
-                                  ],
-                                ),
-                              ),
-                              ...checked.map(_buildShoppingTile),
-                            ],
-                          ],
-                        ),
+                )
+              : Column(
+                  children: [
+                    _buildSummaryHeader(),
+                    Expanded(
+                      child: ListView.builder(
+                        padding:
+                            const EdgeInsets.fromLTRB(16, 12, 16, 80),
+                        itemCount: _bills.length,
+                        itemBuilder: (_, i) => _buildBillCard(_bills[i]),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'shopping_fab',
-        onPressed: () => _showAddItemDialog(),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _bills.isNotEmpty
+          ? FloatingActionButton.extended(
+              heroTag: 'shopping_fab',
+              onPressed: _showAddBillDialog,
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: const Text('สร้างบิล'),
+            )
+          : null,
     );
   }
 }

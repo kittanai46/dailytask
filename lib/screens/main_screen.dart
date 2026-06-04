@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../app_settings.dart';
 import 'banner_editor_screen.dart';
 import 'tasks_screen.dart';
 import 'notes_screen.dart';
@@ -128,6 +129,233 @@ class _MainScreenState extends State<MainScreen> {
     await _saveBanner();
   }
 
+  // ── End Drawer ──────────────────────────────────────────────────────────────
+
+  Widget _buildEndDrawer(BuildContext context) {
+    final theme = Theme.of(context);
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF0D47A1), Color(0xFF1976D2)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.tune_rounded, color: Colors.white, size: 28),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'ตั้งค่า',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // เปลี่ยนธีม (Switch)
+            ValueListenableBuilder<ThemeMode>(
+              valueListenable: appThemeMode,
+              builder: (context, mode, _) {
+                return ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      mode == ThemeMode.dark
+                          ? Icons.nightlight_round
+                          : Icons.wb_sunny_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  title: const Text('เปลี่ยนธีม',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  trailing: Switch(
+                    value: mode == ThemeMode.dark,
+                    onChanged: (val) async {
+                      final newMode = val ? ThemeMode.dark : ThemeMode.light;
+                      await saveThemeMode(newMode);
+                    },
+                  ),
+                  subtitle: Text(
+                    mode == ThemeMode.dark ? 'ธีมมืด' : 'ธีมสว่าง',
+                    style: TextStyle(
+                        color: theme.colorScheme.primary, fontSize: 12),
+                  ),
+                  onTap: () {
+                    final newMode = mode == ThemeMode.dark
+                        ? ThemeMode.light
+                        : ThemeMode.dark;
+                    saveThemeMode(newMode);
+                  },
+                );
+              },
+            ),
+            // วิธีใช้
+            ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.help_outline_rounded,
+                    color: Colors.teal.shade700),
+              ),
+              title: const Text('วิธีใช้',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('คำแนะนำการใช้งานแอป',
+                  style:
+                      TextStyle(color: Colors.teal.shade700, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                _showHelpDialog(context);
+              },
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'DailyTask v1.0',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showThemeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: appThemeMode,
+          builder: (_, currentMode, __) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.palette_outlined),
+                  SizedBox(width: 8),
+                  Text('เปลี่ยนธีม'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ThemeRadioTile(
+                    label: 'ธีมสว่าง',
+                    icon: Icons.light_mode_outlined,
+                    value: ThemeMode.light,
+                    groupValue: currentMode,
+                  ),
+                  _ThemeRadioTile(
+                    label: 'ธีมมืด',
+                    icon: Icons.dark_mode_outlined,
+                    value: ThemeMode.dark,
+                    groupValue: currentMode,
+                  ),
+                  _ThemeRadioTile(
+                    label: 'ตามระบบ',
+                    icon: Icons.settings_suggest_outlined,
+                    value: ThemeMode.system,
+                    groupValue: currentMode,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('ปิด'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.help_outline_rounded, color: Colors.teal),
+            SizedBox(width: 8),
+            Text('วิธีใช้งาน'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              _HelpItem(
+                icon: Icons.check_circle_rounded,
+                color: Color(0xFF1976D2),
+                title: 'จดบันทึกงาน',
+                desc:
+                    'เพิ่ม แก้ไข และลบงานประจำวัน\nทำเครื่องหมายงานที่เสร็จแล้วได้',
+              ),
+              _HelpItem(
+                icon: Icons.sticky_note_2_rounded,
+                color: Color(0xFFFF8F00),
+                title: 'โน็ต / บันทึก',
+                desc: 'จดบันทึกข้อความที่ต้องการเก็บไว้\nรองรับหลายโน็ต',
+              ),
+              _HelpItem(
+                icon: Icons.shopping_cart_rounded,
+                color: Color(0xFF388E3C),
+                title: 'รายการช้อปปิ้ง',
+                desc:
+                    'สร้างลิสต์สิ่งของที่ต้องซื้อ\nทำเครื่องหมายเมื่อซื้อแล้ว',
+              ),
+              _HelpItem(
+                icon: Icons.account_balance_wallet_rounded,
+                color: Color(0xFF7B1FA2),
+                title: 'บันทึกการเงิน',
+                desc: 'บันทึกรายรับและรายจ่าย\nดูสรุปยอดรวมได้',
+              ),
+              _HelpItem(
+                icon: Icons.image_outlined,
+                color: Color(0xFF0D47A1),
+                title: 'แบนเนอร์',
+                desc:
+                    'แตะที่แบนเนอร์บนหน้าหลัก\nเพื่อตกแต่งข้อความ สี และรูปภาพ',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ปิด'),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _greeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'อรุณสวัสดิ์';
@@ -168,18 +396,28 @@ class _MainScreenState extends State<MainScreen> {
         decorIcon != null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      endDrawer: _buildEndDrawer(context),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.brightness == Brightness.dark
+            ? Colors.transparent
+            : Colors.transparent,
         elevation: 2,
-        shadowColor: const Color(0xFF0D47A1).withOpacity(0.25),
+        shadowColor: theme.brightness == Brightness.dark
+            ? const Color(0xFF26263A).withOpacity(0.25)
+            : const Color(0xFF0D47A1).withOpacity(0.25),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0D47A1), Color(0xFF1976D2)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
+          decoration: BoxDecoration(
+            gradient: theme.brightness == Brightness.dark
+                ? const LinearGradient(
+                    colors: [Color(0xFF23233A), Color(0xFF35355A)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                : const LinearGradient(
+                    colors: [Color(0xFF0D47A1), Color(0xFF1976D2)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
           ),
         ),
         titleSpacing: 20,
@@ -188,20 +426,24 @@ class _MainScreenState extends State<MainScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'DailyTask',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: theme.brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.white,
                 letterSpacing: 0.3,
               ),
             ),
             Text(
               _greeting(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: Colors.white70,
+                color: theme.brightness == Brightness.dark
+                    ? Colors.white70
+                    : Colors.white70,
                 height: 1.3,
               ),
             ),
@@ -209,24 +451,35 @@ class _MainScreenState extends State<MainScreen> {
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 4),
             child: Center(
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.18),
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.10)
+                      : Colors.white.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   _shortDate(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
+            ),
+          ),
+          Builder(
+            builder: (ctx) => IconButton(
+              icon: Icon(Icons.menu_rounded, color: theme.brightness == Brightness.dark ? Colors.white : Colors.white),
+              tooltip: 'เมนู',
+              onPressed: () => Scaffold.of(ctx).openEndDrawer(),
             ),
           ),
         ],
@@ -237,7 +490,7 @@ class _MainScreenState extends State<MainScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── Banner ──────────────────────────────────────────────
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
             GestureDetector(
               onTap: _openBannerEditor,
               child: AnimatedContainer(
@@ -360,7 +613,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 20),
 
             // ── Section header ───────────────────────────────────────
             Row(
@@ -373,13 +626,24 @@ class _MainScreenState extends State<MainScreen> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Text(
                   'เมนูหลัก',
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.white70
+                        : const Color(0xFF3D3D3D),
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'เลือกหมวดที่ต้องการ',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.primary.withOpacity(0.7),
                   ),
                 ),
               ],
@@ -392,22 +656,23 @@ class _MainScreenState extends State<MainScreen> {
               child: GridView.count(
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,                childAspectRatio: 0.95,                physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _NavCard(
                     label: 'จดบันทึกงาน',
                     subtitle: 'จัดการงานประจำวัน',
                     icon: Icons.check_circle_rounded,
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFFE3F2FD),
-                        theme.colorScheme.primaryContainer,
-                      ],
+                    lightGradient: const LinearGradient(
+                      colors: [Color(0xFFE3F2FD), Color(0xFFE3DFFF)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    iconColor: theme.colorScheme.primary,
+                    darkGradient: const LinearGradient(
+                      colors: [Color(0xFF181E3A), Color(0xFF1E1A3A)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    iconColor: const Color(0xFF5B5FC4),
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const TasksScreen()),
@@ -417,8 +682,13 @@ class _MainScreenState extends State<MainScreen> {
                     label: 'โน็ต / บันทึก',
                     subtitle: 'บันทึกความคิดไว้ที่นี่',
                     icon: Icons.sticky_note_2_rounded,
-                    gradient: const LinearGradient(
+                    lightGradient: const LinearGradient(
                       colors: [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    darkGradient: const LinearGradient(
+                      colors: [Color(0xFF2A2010), Color(0xFF332A10)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -432,11 +702,13 @@ class _MainScreenState extends State<MainScreen> {
                     label: 'รายการช้อปปิ้ง',
                     subtitle: 'ของที่ต้องซื้อวันนี้',
                     icon: Icons.shopping_cart_rounded,
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFFE8F5E9),
-                        Colors.green.shade100,
-                      ],
+                    lightGradient: LinearGradient(
+                      colors: [const Color(0xFFE8F5E9), Colors.green.shade100],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    darkGradient: const LinearGradient(
+                      colors: [Color(0xFF102018), Color(0xFF152515)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -451,11 +723,16 @@ class _MainScreenState extends State<MainScreen> {
                     label: 'บันทึกการเงิน',
                     subtitle: 'รายรับ-รายจ่ายของคุณ',
                     icon: Icons.account_balance_wallet_rounded,
-                    gradient: LinearGradient(
+                    lightGradient: LinearGradient(
                       colors: [
                         const Color(0xFFF3E5F5),
                         Colors.purple.shade100,
                       ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    darkGradient: const LinearGradient(
+                      colors: [Color(0xFF1E1028), Color(0xFF251530)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -508,7 +785,8 @@ class _NavCard extends StatelessWidget {
     required this.label,
     required this.subtitle,
     required this.icon,
-    required this.gradient,
+    required this.lightGradient,
+    required this.darkGradient,
     required this.iconColor,
     required this.onTap,
   });
@@ -516,19 +794,32 @@ class _NavCard extends StatelessWidget {
   final String label;
   final String subtitle;
   final IconData icon;
-  final Gradient gradient;
+  final Gradient lightGradient;
+  final Gradient darkGradient;
   final Color iconColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final gradient = isDark ? darkGradient : lightGradient;
+    final labelColor =
+        isDark ? Colors.white : const Color(0xFF1A1A2E);
+    final subtitleColor =
+        isDark ? Colors.white54 : const Color(0xFF757575);
+    final borderColor =
+        isDark ? Colors.white.withOpacity(0.06) : Colors.transparent;
+
     return Container(
       decoration: BoxDecoration(
         gradient: gradient,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: iconColor.withOpacity(0.18),
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : iconColor.withOpacity(0.18),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -540,45 +831,150 @@ class _NavCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15),
-                  shape: BoxShape.circle,
+          splashColor: iconColor.withOpacity(0.12),
+          highlightColor: iconColor.withOpacity(0.06),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: iconColor.withOpacity(isDark ? 0.22 : 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 28, color: iconColor),
                 ),
-                child: Icon(icon, size: 28, color: iconColor),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: iconColor,
+                const SizedBox(height: 12),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: labelColor,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 3),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
+                const SizedBox(height: 4),
+                Text(
                   subtitle,
                   style: TextStyle(
                     fontSize: 11,
-                    color: iconColor.withOpacity(0.6),
+                    color: subtitleColor,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 11,
+                      color: isDark
+                          ? Colors.white30
+                          : iconColor.withOpacity(0.4),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Theme radio tile ──────────────────────────────────────────────────────────
+
+class _ThemeRadioTile extends StatelessWidget {
+  const _ThemeRadioTile({
+    required this.label,
+    required this.icon,
+    required this.value,
+    required this.groupValue,
+  });
+
+  final String label;
+  final IconData icon;
+  final ThemeMode value;
+  final ThemeMode groupValue;
+
+  @override
+  Widget build(BuildContext context) {
+    return RadioListTile<ThemeMode>(
+      value: value,
+      groupValue: groupValue,
+      title: Row(
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 8),
+          Text(label),
+        ],
+      ),
+      onChanged: (v) {
+        if (v != null) saveThemeMode(v);
+      },
+      contentPadding: EdgeInsets.zero,
+    );
+  }
+}
+
+// ── Help item ─────────────────────────────────────────────────────────────────
+
+class _HelpItem extends StatelessWidget {
+  const _HelpItem({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.desc,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String desc;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 20, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 2),
+                Text(desc,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        height: 1.4)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -3,12 +3,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/task.dart';
 import '../models/note.dart';
 import '../models/shopping_item.dart';
+import '../models/shopping_bill.dart';
 import '../models/budget.dart';
 
 class StorageService {
   static const _tasksKey = 'tasks';
   static const _notesKey = 'notes';
   static const _shoppingKey = 'shopping_items';
+  static const _shoppingBillsKey = 'shopping_bills';
   static const _budgetsKey = 'budgets';
 
   // Tasks
@@ -62,6 +64,24 @@ class StorageService {
     await prefs.setString(
       _shoppingKey,
       jsonEncode(items.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  // Shopping Bills
+  static Future<List<ShoppingBill>> getShoppingBills() async {
+    final prefs = await SharedPreferences.getInstance();
+    final str = prefs.getString(_shoppingBillsKey);
+    if (str == null) return [];
+    return (jsonDecode(str) as List)
+        .map((e) => ShoppingBill.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> saveShoppingBills(List<ShoppingBill> bills) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _shoppingBillsKey,
+      jsonEncode(bills.map((e) => e.toJson()).toList()),
     );
   }
 
