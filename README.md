@@ -1,7 +1,7 @@
 # Application : DailyTask
 
 <p align="center">
-  <img src="assets/preview/Appicon.png.png" width="140"/>
+  <img src="assets/preview/Appicon.png" width="140"/>
 </p>
 
 <p align="center">
