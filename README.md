@@ -13,7 +13,6 @@
 ---
 
 # Preview Application
-assets/preview/Appicon.png.png
 <p align="center">
   <img src="assets/preview/preview_application.png"/>
 </p>
