@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, prefer_null_aware_operators
+// ignore_for_file: deprecated_member_use, prefer_null_aware_operators, unused_element
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -243,56 +243,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _showThemeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return ValueListenableBuilder<ThemeMode>(
-          valueListenable: appThemeMode,
-          builder: (_, currentMode, __) {
-            return AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.palette_outlined),
-                  SizedBox(width: 8),
-                  Text('เปลี่ยนธีม'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _ThemeRadioTile(
-                    label: 'ธีมสว่าง',
-                    icon: Icons.light_mode_outlined,
-                    value: ThemeMode.light,
-                    groupValue: currentMode,
-                  ),
-                  _ThemeRadioTile(
-                    label: 'ธีมมืด',
-                    icon: Icons.dark_mode_outlined,
-                    value: ThemeMode.dark,
-                    groupValue: currentMode,
-                  ),
-                  _ThemeRadioTile(
-                    label: 'ตามระบบ',
-                    icon: Icons.settings_suggest_outlined,
-                    value: ThemeMode.system,
-                    groupValue: currentMode,
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('ปิด'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   void _showHelpDialog(BuildContext context) {
     showDialog(

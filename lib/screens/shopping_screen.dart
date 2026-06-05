@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../models/shopping_bill.dart';
 import '../services/storage_service.dart';

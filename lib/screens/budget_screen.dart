@@ -1,3 +1,5 @@
+// ignore_for_file: dead_code, prefer_interpolation_to_compose_strings
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/budget.dart';
@@ -352,7 +354,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                                         Row(
                                           children: [
                                             Icon(
-                                              _budgetIconFromCodePoint(budget.iconCodePoint ?? 0xef63),
+                                              _budgetIconFromCodePoint(budget.iconCodePoint),
                                               color: Colors.purple,
                                               size: 22,
                                             ),
@@ -501,7 +503,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                                         Row(
                                           children: [
                                             Icon(
-                                              _budgetIconFromCodePoint(budget.iconCodePoint ?? 0xef63),
+                                              _budgetIconFromCodePoint(budget.iconCodePoint),
                                               color: Colors.purple,
                                               size: 22,
                                             ),
