@@ -50,7 +50,7 @@
 - Dart
 - Local Storage
 - Material Design
-- Hive local storang
+- Hive local storange
 
 ---
 
